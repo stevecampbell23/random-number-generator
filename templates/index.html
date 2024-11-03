@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -15,9 +16,6 @@
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ddd;
-        }
-        .history {
-            margin-top: 20px;
         }
     </style>
 </head>
@@ -43,70 +41,53 @@
         <button onclick="generate()">Generate</button>
         
         <div class="results" id="results"></div>
-        
-        <div class="history">
-            <h2>Recent History</h2>
-            <div id="history"></div>
-        </div>
     </div>
 
     <script>
         async function generate() {
-            const min = parseInt(document.getElementById('min').value);
-            const max = parseInt(document.getElementById('max').value);
-            const count = parseInt(document.getElementById('count').value);
-            
-            const response = await fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ min, max, count })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                let resultHtml = '';
-                if (count === 1) {
-                    resultHtml = `Generated number: ${data.number}`;
-                } else {
-                    resultHtml = `
-                        <h3>Generated Numbers:</h3>
-                        <p>${data.numbers.join(', ')}</p>
-                        <h3>Statistics:</h3>
-                        <p>Mean: ${data.statistics.mean}</p>
-                        <p>Median: ${data.statistics.median}</p>
-                        <p>Mode: ${data.statistics.mode}</p>
-                        <p>Range: ${data.statistics.range}</p>
-                    `;
+            try {
+                const min = parseInt(document.getElementById('min').value);
+                const max = parseInt(document.getElementById('max').value);
+                const count = parseInt(document.getElementById('count').value);
+                
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ min, max, count })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                document.getElementById('results').innerHTML = resultHtml;
-            } else {
-                document.getElementById('results').innerHTML = `Error: ${data.error}`;
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let resultHtml = '';
+                    if (count === 1) {
+                        resultHtml = `Generated number: ${data.number}`;
+                    } else {
+                        resultHtml = `
+                            <h3>Generated Numbers:</h3>
+                            <p>${data.numbers.join(', ')}</p>
+                            <h3>Statistics:</h3>
+                            <p>Mean: ${data.statistics.mean}</p>
+                            <p>Median: ${data.statistics.median}</p>
+                            <p>Mode: ${data.statistics.mode}</p>
+                            <p>Range: ${data.statistics.range}</p>
+                        `;
+                    }
+                    document.getElementById('results').innerHTML = resultHtml;
+                } else {
+                    document.getElementById('results').innerHTML = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML = `Error: ${error.message}`;
             }
-            
-            loadHistory();
         }
-        
-        async function loadHistory() {
-            const response = await fetch('/history');
-            const history = await response.json();
-            
-            const historyHtml = history.map(entry => {
-                const date = new Date(entry.timestamp).toLocaleString();
-                if (entry.number !== undefined) {
-                    return `<p>${date}: Generated ${entry.number} (range: ${entry.range[0]}-${entry.range[1]})</p>`;
-                } else {
-                    return `<p>${date}: Generated ${entry.numbers.length} numbers (range: ${entry.range[0]}-${entry.range[1]})</p>`;
-                }
-            }).join('');
-            
-            document.getElementById('history').innerHTML = historyHtml;
-        }
-        
-        // Load history on page load
-        loadHistory();
     </script>
 </body>
 </html>
